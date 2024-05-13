@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 type HookNextFunction = () => void;
+const SALT = 10;
 
 interface User extends Document {
   fullName: string;
@@ -16,7 +17,7 @@ interface User extends Document {
   forgotPasswordOTP?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
-  role: 'Customers' | 'Admins';
+  role: 'Customer' | 'Admin';
   avatar: object;
   address: {
     street: string;
@@ -73,7 +74,7 @@ const userSchema = new Schema<User>({
   forgotPasswordOTP: { type: String },
   passwordResetToken: { type: String },
   passwordResetExpires: { type: Date },
-  role: { type: String, enum: ['Customers', 'Admins'], default: 'Customers' },
+  role: { type: String, enum: ['Customer', 'Admin'], default: 'Customer' },
   avatar: { type: Object },
   address: {
     street: { type: String },
@@ -97,8 +98,21 @@ const userSchema = new Schema<User>({
   active: { type: Boolean, default: false }
 });
 
+
 // Hash password before saving
 userSchema.pre<User>('save', async function (next: HookNextFunction) {
+  if (!this.isModified('password')) return next();
+
+  this.password = await bcrypt.hash(this.password, SALT);
+  console.log(this.password);
+  
+  this.passwordChangedAt = new Date(Date.now() - 1000); // Set to a second ago to ensure consistency
+  next();
+});
+
+// hash before update
+/*
+userSchema.post<User>("findByIdAndUpdate", async function (next: HookNextFunction) {
   if (!this.isModified('password')) return next();
 
   this.password = await bcrypt.hash(this.password, 10);
@@ -106,7 +120,7 @@ userSchema.pre<User>('save', async function (next: HookNextFunction) {
   
   this.passwordChangedAt = new Date(Date.now() - 1000); // Set to a second ago to ensure consistency
   next();
-});
+});*/
 
 // Compare entered password with stored password
 userSchema.methods.correctPassword = async function (candidatePassword: string, userPassword: string) {

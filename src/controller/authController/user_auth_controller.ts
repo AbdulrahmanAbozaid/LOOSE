@@ -1,25 +1,33 @@
 // Import necessary modules and classes
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import jwt from "jsonwebtoken";
+// import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import userRepo from "../../model/user/user.repo";
+import User from "../../model/user/model"
 import sendEmail from "../../utils/mailer";
 import asyncHandler from "../../middlewares/async_handler";
 import AppError from "../../utils/app_error";
+import { generateToken } from "../../utils/token.service";
 
 // Define the AuthController class implementing the AuthService interface
 class AuthController  {
 
   // Function to sign JWT token
+  /*
   private signToken(id: string): string {
     return jwt.sign({ id }, process.env.JWT_SECRET!, {
       expiresIn: process.env.JWT_EXPIRES_IN!,
     });
-  }
+  }*/
 
   // Function to create and send JWT token
-  private createSendToken(user: any): { token: string; user: any } {
-    const token = this.signToken(user._id);
+  private async createSendToken(user: any): Promise<{ token: string; user: any }> {
+    // const token = this.signToken(user._id);
+    const token = await generateToken({
+		id: user._id,
+		email: user.email,
+		role: user.role,
+	  });
 
     return {
       token,
@@ -53,13 +61,15 @@ class AuthController  {
     // Find user by email
     const user = await userRepo.findByEmail(email);
 	console.log(user);
+	user.active = true;
+	await user.save();
 	
     if (!user || !(await user.correctPassword(password, user.password))) {
       throw new AppError("invalid-credentials", 401);
     }
 
     // Create and send token
-    const { token, user: userData } = this.createSendToken(user);
+    const { token, user: userData } =  await this.createSendToken(user);
     res.status(200).json({ success: true, token, user: userData });
   });
 
@@ -71,12 +81,13 @@ class AuthController  {
     }
 
     // Generate OTP
-    const OTP = Math.floor(100000 + Math.random() * 900000).toString();
+    const OTP = Math.floor(1000 + Math.random() * 9000).toString();
     await user.createForgetPasswordOTP(OTP);
     await user.save({ validateBeforeSave: false });
 
     // Send email with OTP
     const message = `Forgot your password ? \n Your OTP Code is ${OTP}.\nIf you didn't forget your password, please ignore this email!`;
+
     await sendEmail(user.email, "Your password reset token (valid for 10 min)", message);
 
     res.status(200).json({ success: true, message: "OTP sent to email!" });
@@ -86,12 +97,18 @@ class AuthController  {
   public verifyForgotPasswordOTP: RequestHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const HashedOTP = crypto.createHash("sha256").update(req.params.OTP).digest("hex");
 
-    const user = await userRepo.findOne({
-      forgetPasswordOTP: HashedOTP,
-      passwordResetExpires: { $gt: Date.now() },
+	console.log("Hashed OTP: ", HashedOTP, req.params.OTP);
+	
+    const user = await User.findOne({
+		forgotPasswordOTP: HashedOTP,
+		passwordResetExpires: { $gt: Date.now() },
     });
 
-    const resetToken = user.createPasswordResetTokenOTP();
+	if (!user) {
+		throw new AppError("invalid-otp", 401);
+	}
+
+    const resetToken = (user as any).createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
     res.status(200).json({ success: true, token: resetToken });
@@ -111,12 +128,10 @@ class AuthController  {
     }
 
     user.password = req.body.password;
-    user.passwordConfirm = req.body.passwordConfirm;
     user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
     await user.save();
 
-    const { token: newToken, user: userData } = this.createSendToken(user);
+    const { token: newToken, user: userData } = await this.createSendToken(user);
     res.status(200).json({ success: true, token: newToken, user: userData });
   });
 }

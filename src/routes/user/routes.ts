@@ -1,5 +1,7 @@
 import { Router } from "express";
 import AuthController from "../../controller/authController/user_auth_controller";
+import * as userController from "../../controller/user.controller";
+import { authorize, restrictTo } from "../../utils/auth.service";
 
 const router = Router();
 
@@ -18,5 +20,25 @@ router.post("/auth/verify-forgot-password-otp/:OTP", AuthController.verifyForgot
 // POST /api/v1/users/reset-password/:token
 router.post("/auth/reset-password/:token", AuthController.resetPassword);
 
+// GET /api/v1/users - Get all users
+router.get('/', authorize, restrictTo("Admin"), userController.getUsers);
+
+// GET /api/v1/users/:id - Get a user by ID
+router.get('/:id', authorize, userController.getUserById);
+
+// PUT /api/v1/users/:id - Update a user
+router.put('/:id', authorize, userController.updateUser);
+
+// DELETE /api/v1/users/:id - Delete a user
+router.delete('/:id', authorize, restrictTo("Admin"), userController.deleteUser);
+
+// GET /api/v1/users/:id/cart - Get the cart for a user
+router.get('/:id/cart', authorize, userController.getUserCart);
+
+// PUT /api/v1/users/:id/cart - Update or create the cart for a user
+router.put('/:id/cart', authorize, userController.updateUserCart);
+
+// POST /api/v1/users/:id/cart - Add a whole cart for a user
+router.post('/:id/cart', authorize, userController.addUserCart);
 
 export default router;

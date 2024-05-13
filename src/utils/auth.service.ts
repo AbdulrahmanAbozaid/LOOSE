@@ -9,7 +9,7 @@ import Client from "../model/user/model";
 // TODO:refactor
 
 // authenticate Clients
-export const authenticate = asyncHandler(
+export const authorize = asyncHandler(
   async (req: Request & { user?: any }, res: Response, next: NextFunction) => {
     const accessToken: string | undefined =
       req.headers["authorization"] &&
@@ -19,12 +19,12 @@ export const authenticate = asyncHandler(
     ] as string;
     let user;
 
-    if (!accessToken || !refreshToken) {
+    if (!accessToken && !refreshToken) {
       return next(new AppError("Access or Refresh token not found", 404));
     }
 
     const { error: accessError, data: accessData } = await verifyToken(
-      accessToken
+      accessToken as string
     );
 
     if (accessError?.name === "TokenExpiredError") {
@@ -106,8 +106,8 @@ export const authenticate = asyncHandler(
 // for role based access control
 export const restrictTo =
   (...roles: string[]) =>
-  async (req: Request & { user: any }, res: Response, next: NextFunction) => {
-    if (roles.includes(req?.user?.role)) {
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (roles.includes((req as any)?.user?.role)) {
       return next();
     }
 
