@@ -57,7 +57,7 @@ class UserRepository {
 
   // Method to find user by email
   async findByEmail(email: string): Promise<any> {
-    return await Users.findOne({ email });
+    return await Users.findOne({ email }).select("+password");
   }
 
   // Method to find a user by ID

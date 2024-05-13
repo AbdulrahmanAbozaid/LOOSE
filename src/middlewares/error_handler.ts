@@ -192,10 +192,11 @@ export default (err: any, req: Request, res: Response, next: NextFunction) => {
 
   if (process.env.NODE_ENV === "development") {
     ErrorHandler.sendErrorDev(err, req, res);
+	console.error(err);
   } else if (process.env.NODE_ENV === "production") {
     let error = { ...err };
     error.message = err.message;
-
+	
     if (error.name === "CastError")
       error = ErrorHandler.handleCastErrorDB(error);
     if (error.code === 11000)

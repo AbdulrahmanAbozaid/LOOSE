@@ -52,6 +52,8 @@ class AuthController  {
 
     // Find user by email
     const user = await userRepo.findByEmail(email);
+	console.log(user);
+	
     if (!user || !(await user.correctPassword(password, user.password))) {
       throw new AppError("invalid-credentials", 401);
     }

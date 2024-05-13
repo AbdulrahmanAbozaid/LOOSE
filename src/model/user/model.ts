@@ -101,7 +101,9 @@ const userSchema = new Schema<User>({
 userSchema.pre<User>('save', async function (next: HookNextFunction) {
   if (!this.isModified('password')) return next();
 
-  this.password = await bcrypt.hash(this.password, 12);
+  this.password = await bcrypt.hash(this.password, 10);
+  console.log(this.password);
+  
   this.passwordChangedAt = new Date(Date.now() - 1000); // Set to a second ago to ensure consistency
   next();
 });
