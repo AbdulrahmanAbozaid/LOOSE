@@ -107,7 +107,8 @@ export const authorize = asyncHandler(
 export const restrictTo =
   (...roles: string[]) =>
   async (req: Request, res: Response, next: NextFunction) => {
-    if (roles.includes((req as any)?.user?.role)) {
+	roles = roles.map(role => role.toLowerCase());
+    if (roles.includes((req as any)?.user?.role.toLowerCase())) {
       return next();
     }
 
