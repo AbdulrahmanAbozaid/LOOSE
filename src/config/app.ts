@@ -9,6 +9,9 @@ import GlobeErrorHandler from "../middlewares/error_handler.js";
 
 const app: Express = express();
 
+app.use(express.json({ limit: "20kb" }));
+app.use(express.urlencoded({ extended: false, limit: "30mb" }));
+
 app.use(
   cors({
     allowedHeaders: "*",
@@ -28,9 +31,6 @@ const limiter = rateLimit({
 });
 
 app.use("/api", limiter);
-
-app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: false, limit: "10mb" }));
 app.use(API);
 
 app.all("*", (req, res, next) => {

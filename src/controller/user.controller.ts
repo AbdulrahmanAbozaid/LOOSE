@@ -33,7 +33,7 @@ const updateUser: RequestHandler = asyncHandler(async (req: Request, res: Respon
 	userData.password = await hash(userData.password, 10);
   }
 
-//   let user: Users | null = await User.findById(req.params.id);
+	//   let user: Users | null = await User.findById(req.params.id);
   let user: Users | null = await User.findByIdAndUpdate(req.params.id, userData, {
 	new: true,
   })

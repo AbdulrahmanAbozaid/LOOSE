@@ -1,4 +1,4 @@
-import Users, { User } from "./model"
+import Users from "./model"
 
 /*
 export interface AuthService {

@@ -11,15 +11,6 @@ import { generateToken } from "../../utils/token.service";
 
 // Define the AuthController class implementing the AuthService interface
 class AuthController  {
-
-  // Function to sign JWT token
-  /*
-  private signToken(id: string): string {
-    return jwt.sign({ id }, process.env.JWT_SECRET!, {
-      expiresIn: process.env.JWT_EXPIRES_IN!,
-    });
-  }*/
-
   // Function to create and send JWT token
   private async createSendToken(user: any): Promise<{ token: string; user: any }> {
     // const token = this.signToken(user._id);
@@ -133,6 +124,73 @@ class AuthController  {
 
     const { token: newToken, user: userData } = await this.createSendToken(user);
     res.status(200).json({ success: true, token: newToken, user: userData });
+  });
+
+  public verifyEmail: RequestHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { email, otp } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Check if the OTP matches
+    if (user.verifyEmailOTPToken !== otp) {
+      throw new AppError('Invalid OTP', 400);
+    }
+
+    // Verify the email
+    user.emailActive = true;
+    user.verifyEmailOTPToken = undefined;
+    user.verifyEmailExpires = undefined;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Email verified successfully' });
+  });
+
+  // Function to resend verification OTP email
+  public resendVerifyOTPEmail: RequestHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.verifyEmailOTPToken = otp;
+    user.verifyEmailExpiresAt = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+    await user.save();
+
+    // Send OTP email
+    const message = `Your verification OTP: ${otp}`;
+    // Add logic to send email
+
+    res.status(200).json({ success: true, message: 'Verification OTP resent successfully' });
+  });
+
+  public changePassword: RequestHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { password } = req.body;
+
+    // Find user by email
+    const user = await User.findById(req.params.id).select("+password");
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Check if old password matches
+    if (!(await user.correctPassword(password, user.password))) {
+      throw new AppError('Incorrect old password', 400);
+    }
+
+    // Update user's password
+    user.password = password;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Password changed successfully' });
   });
 }
 

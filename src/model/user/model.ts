@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import Product from "../product/model";
+// import Product from "../product/model";
 type HookNextFunction = () => void;
 const SALT = 10;
 
@@ -29,10 +29,9 @@ interface User extends Document {
   };
   cart: {
     items: Array<{
-      product: mongoose.Types.ObjectId;
+      product: Schema.Types.ObjectId;
       quantity: number;
-      colors?: string[];
-      size?: string;
+      total: number;
     }>;
     totalPrice: number;
     totalQuantity: number;
@@ -41,11 +40,14 @@ interface User extends Document {
   passwordChangedAt?: Date;
   active: boolean;
   addToCart(
-    productId: mongoose.Types.ObjectId | string,
+    productId: Schema.Types.ObjectId,
     quantity: number,
-    colors?: string[],
-    size?: string
+	price: number
   ): Promise<void>;
+  correctPassword(
+    candidatePassword: string,
+    userPassword: string
+  ): Promise<boolean>;
 }
 
 const userSchema = new Schema<User>(
@@ -99,11 +101,7 @@ const userSchema = new Schema<User>(
         {
           product: { type: Schema.Types.ObjectId, ref: "Products" },
           quantity: { type: Number },
-          colors: {
-            type: [{ type: String }],
-            required: false,
-          },
-          size: { type: String, required: false },
+		  total: { type: Number },
         },
       ],
       totalPrice: { type: Number },
@@ -186,10 +184,9 @@ userSchema.methods.createPasswordResetToken = function () {
 };
 
 userSchema.methods.addToCart = async function (
-  productId: mongoose.Types.ObjectId | string,
+  productId: Schema.Types.ObjectId,
   quantity: number,
-  colors?: string[],
-  size?: string
+  price: number
 ): Promise<void> {
   const user = this as User;
 
@@ -204,18 +201,13 @@ userSchema.methods.addToCart = async function (
   // If product already exists in cart, update quantity and total price
   if (updatedProductIndex >= 0) {
     updatedItems[updatedProductIndex].quantity += quantity;
+    updatedItems[updatedProductIndex].total += price * quantity;
   } else {
     // If product does not exist in cart, add it to the cart items
-    updatedItems.push({ product: productId, quantity, colors, size });
+    updatedItems.push({ product: productId, quantity, total: price * quantity });
   }
 
-  const product = await Product.findById(productId);
-
-  if (!product) {
-    throw new Error("Product not found");
-  }
-
-  updatedTotalPrice += product.price * quantity;
+  updatedTotalPrice += price * quantity;
 
   user.cart.items = updatedItems;
   user.cart.totalQuantity = updatedTotalQuantity;
@@ -223,6 +215,40 @@ userSchema.methods.addToCart = async function (
 
   await user.save();
 };
+
+userSchema.methods.removeFromCart = async function (
+	productId: Schema.Types.ObjectId,
+	quantity: number,
+	price: number
+  ): Promise<void> {
+	const user = this as User;
+  
+	const updatedProductIndex = user.cart.items.findIndex(
+	  (item) => item.product.toString() === productId.toString()
+	);
+  
+	let updatedItems = [...user.cart.items];
+	let updatedTotalQuantity = user.cart.totalQuantity - quantity;
+	let updatedTotalPrice = user.cart.totalPrice;
+  
+	// If product already exists in cart, update quantity and total price
+	if (updatedProductIndex >= 0) {
+	  updatedItems[updatedProductIndex].quantity -= quantity;
+	  updatedItems[updatedProductIndex].total -= price * quantity;
+
+	  if(updatedItems[updatedProductIndex].quantity <= 0){
+		updatedItems.splice(updatedProductIndex, 1);
+	  }
+	}
+  
+	updatedTotalPrice -= price * quantity;
+  
+	user.cart.items = updatedItems;
+	user.cart.totalQuantity = updatedTotalQuantity;
+	user.cart.totalPrice = updatedTotalPrice;
+
+	await user.save();
+  };
 
 export default mongoose.model<User>("Users", userSchema);
 export { User };

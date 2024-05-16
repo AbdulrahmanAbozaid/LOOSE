@@ -20,6 +20,9 @@ router.post("/auth/verify-forgot-password-otp/:OTP", AuthController.verifyForgot
 // POST /api/v1/users/reset-password/:token
 router.post("/auth/reset-password/:token", AuthController.resetPassword);
 
+// PATCH /api/v1/users/password
+router.post("/:id/password/", AuthController.changePassword);
+
 // GET /api/v1/users - Get all users
 router.get('/', authorize, restrictTo("Admin"), userController.getUsers);
 

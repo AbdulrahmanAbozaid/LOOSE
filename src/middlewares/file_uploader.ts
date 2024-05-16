@@ -8,7 +8,7 @@ import { Request } from "express";
 export default function (folder = "uploads") {
   let storage = multer.diskStorage({
     destination: (req: Request, file: any, cb: Function) => {
-      cb(null, `src/public/${folder}/`);
+      cb(null, `src/${folder}/`);
     },
     filename: (req: Request, file: any, cb: Function) => {
       const uniqueSuffix = Date.now() + "-" + Math.trunc(Math.random() * 1e5);

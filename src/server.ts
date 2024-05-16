@@ -1,6 +1,7 @@
 import app from "./config/app.js";
 import {config} from 'dotenv';
 import connection from "./config/db.connection.js";
+import colors from "colors";
 
 config();
 
@@ -17,5 +18,6 @@ process.on('uncaughtException', (error: Error) => {
 await connection();
 
 app.listen(port, () => {
-	console.log(`[server]: Server is running on port ${port}`);
+	console.log(colors.bgCyan.bold(`[server]: Server is running on port ${port}`));
 });
+

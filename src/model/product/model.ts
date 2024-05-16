@@ -6,7 +6,7 @@ interface IProduct extends Document {
     description: string;
     category: Schema.Types.ObjectId;
     status: 'active' | 'scheduled' | 'draft';
-    photos: object[]; // Assuming photos are stored as URLs
+    photos: object[];
     price: number;
     colors: string[];
     sizes: string[];
@@ -20,7 +20,7 @@ const ProductSchema: Schema = new Schema<IProduct>({
     name: { type: String, required: true },
     description: { type: String, required: true },
     category: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
-    status: { type: String, enum: ['active', 'scheduled', 'draft'], required: true },
+    status: { type: String, enum: ['active', 'scheduled', 'draft'], default: 'draft'},
     photos: { type: [Object], required: false, default: [
 		{
 			url: "https://res.cloudinary.com/dquzat4lc/image/upload/v1715714089/Loose/pxczt8xvzvpxdslcy605.jpg"
