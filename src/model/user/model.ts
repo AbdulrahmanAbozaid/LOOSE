@@ -239,23 +239,30 @@ userSchema.methods.removeFromCart = async function (
   );
 
   let updatedItems = [...user.cart.items];
-  let updatedTotalQuantity = (user.cart.totalQuantity || 0) - quantity;
+  let updatedTotalQuantity = (user.cart.totalQuantity || 0);
   let updatedTotalPrice = user.cart.totalPrice || 0;
+
 
   // If product already exists in cart, update quantity and total price
   if (updatedProductIndex >= 0) {
-    updatedItems[updatedProductIndex].quantity -= quantity;
-    updatedItems[updatedProductIndex].total -= price * quantity;
-
-    if (updatedItems[updatedProductIndex].quantity <= 0) {
-      updatedItems.splice(updatedProductIndex, 1);
-    }
+	if (updatedItems[updatedProductIndex].quantity <= quantity) {
+		user.cart.totalQuantity -= updatedItems[updatedProductIndex].quantity;
+		user.cart.totalPrice -= updatedItems[updatedProductIndex].quantity * price;
+		updatedItems.splice(updatedProductIndex, 1);
+		user.cart.items = updatedItems;
+		await user.save();
+		return;
+	} else {
+		updatedItems[updatedProductIndex].quantity -= quantity;
+		updatedItems[updatedProductIndex].total -= price * quantity;
+	}
+  } else {
+	return;
   }
 
   updatedTotalPrice -= price * quantity;
-
+  user.cart.totalQuantity -= quantity;
   user.cart.items = updatedItems;
-  user.cart.totalQuantity = updatedTotalQuantity;
   user.cart.totalPrice = updatedTotalPrice;
 
   await user.save();

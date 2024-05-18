@@ -62,7 +62,7 @@ const deleteUser: RequestHandler = asyncHandler(async (req: Request, res: Respon
 // @route   GET /api/v1/users/:id/cart
 // @access  Private (user only)
 const getUserCart: RequestHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findById(req.params.id).populate("cart.items.product");
   if (!user) {
     return next(new AppError('User not found', 404));
   }
