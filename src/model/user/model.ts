@@ -5,6 +5,20 @@ import crypto from "crypto";
 type HookNextFunction = () => void;
 const SALT = 10;
 
+interface CartItem {
+  product: Schema.Types.ObjectId;
+  quantity: number;
+  total: number;
+  colors: string[];
+  sizes: string[];
+}
+
+interface Cart {
+  items: CartItem[];
+  totalPrice: number;
+  totalQuantity: number;
+}
+
 interface User extends Document {
   fullName: string;
   phone: string;
@@ -27,18 +41,12 @@ interface User extends Document {
     state: string;
     zipCode: string;
   };
-  cart: {
-    items: Array<{
-      product: Schema.Types.ObjectId;
-      quantity: number;
-      total: number;
-    }>;
-    totalPrice: number;
-    totalQuantity: number;
-  };
+  cart: Cart;
   lastActivityDate: Date;
   passwordChangedAt?: Date;
   active: boolean;
+  favourites: Array<Schema.Types.ObjectId>;
+  // methods
   addToCart(
     productId: Schema.Types.ObjectId,
     quantity: number,
@@ -53,7 +61,10 @@ interface User extends Document {
     quantity: number,
     price: number
   ): Promise<void>;
-  favourites: Array<Schema.Types.ObjectId>;
+  checkoutCart(): Promise<void>;
+  addToFavs(productId: Schema.Types.ObjectId): Promise<void>;
+  removeFromFavs(productId: Schema.Types.ObjectId): Promise<void>;
+  increaseSeen(): Promise<void>;
 }
 
 const userSchema = new Schema<User>(
@@ -108,6 +119,8 @@ const userSchema = new Schema<User>(
           product: { type: Schema.Types.ObjectId, ref: "Products" },
           quantity: { type: Number, default: 0 },
           total: { type: Number, default: 0 },
+          colors: [{ type: String }],
+          sizess: [{ type: String }],
         },
       ],
       totalPrice: { type: Number, default: 0 },
@@ -116,7 +129,7 @@ const userSchema = new Schema<User>(
     lastActivityDate: { type: Date },
     passwordChangedAt: { type: Date, select: false },
     active: { type: Boolean, default: false },
-	favourites: { type: [Schema.Types.ObjectId], ref: "Products" }
+    favourites: [{ type: mongoose.Types.ObjectId, ref: "Products" }],
   },
   {
     timestamps: true,
@@ -193,7 +206,9 @@ userSchema.methods.createPasswordResetToken = function () {
 userSchema.methods.addToCart = async function (
   productId: Schema.Types.ObjectId,
   quantity: number,
-  price: number
+  price: number,
+  colors: string[],
+  sizes: string[]
 ): Promise<void> {
   const user = this as User;
 
@@ -202,7 +217,7 @@ userSchema.methods.addToCart = async function (
   );
 
   let updatedItems = [...user.cart.items];
-  let updatedTotalQuantity = (user.cart.totalQuantity || 0)  + quantity;
+  let updatedTotalQuantity = (user.cart.totalQuantity || 0) + quantity;
   let updatedTotalPrice = user.cart.totalPrice || 0;
 
   // If product already exists in cart, update quantity and total price
@@ -215,6 +230,8 @@ userSchema.methods.addToCart = async function (
       product: productId,
       quantity,
       total: price * quantity,
+      colors,
+      sizes,
     });
   }
 
@@ -239,25 +256,25 @@ userSchema.methods.removeFromCart = async function (
   );
 
   let updatedItems = [...user.cart.items];
-  let updatedTotalQuantity = (user.cart.totalQuantity || 0);
+  //   let updatedTotalQuantity = user.cart.totalQuantity || 0;
   let updatedTotalPrice = user.cart.totalPrice || 0;
-
 
   // If product already exists in cart, update quantity and total price
   if (updatedProductIndex >= 0) {
-	if (updatedItems[updatedProductIndex].quantity <= quantity) {
-		user.cart.totalQuantity -= updatedItems[updatedProductIndex].quantity;
-		user.cart.totalPrice -= updatedItems[updatedProductIndex].quantity * price;
-		updatedItems.splice(updatedProductIndex, 1);
-		user.cart.items = updatedItems;
-		await user.save();
-		return;
-	} else {
-		updatedItems[updatedProductIndex].quantity -= quantity;
-		updatedItems[updatedProductIndex].total -= price * quantity;
-	}
+    if (updatedItems[updatedProductIndex].quantity <= quantity) {
+      user.cart.totalQuantity -= updatedItems[updatedProductIndex].quantity;
+      user.cart.totalPrice -=
+        updatedItems[updatedProductIndex].quantity * price;
+      updatedItems.splice(updatedProductIndex, 1);
+      user.cart.items = updatedItems;
+      await user.save();
+      return;
+    } else {
+      updatedItems[updatedProductIndex].quantity -= quantity;
+      updatedItems[updatedProductIndex].total -= price * quantity;
+    }
   } else {
-	return;
+    return;
   }
 
   updatedTotalPrice -= price * quantity;
@@ -266,6 +283,24 @@ userSchema.methods.removeFromCart = async function (
   user.cart.totalPrice = updatedTotalPrice;
 
   await user.save();
+};
+
+userSchema.methods.addToFavs = async function (
+  productId: Schema.Types.ObjectId
+): Promise<void> {
+  if (!this.favourites.includes(productId)) {
+    this.favourites.push(productId);
+    await this.save();
+  }
+};
+
+userSchema.methods.removeFromFavs = async function (
+  productId: Schema.Types.ObjectId
+): Promise<void> {
+  this.favourites = this.favourites.filter(
+    (fav: Schema.Types.ObjectId) => fav.toString() !== productId.toString()
+  );
+  await this.save();
 };
 
 export default mongoose.model<User>("Users", userSchema);
