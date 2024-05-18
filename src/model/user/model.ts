@@ -42,12 +42,18 @@ interface User extends Document {
   addToCart(
     productId: Schema.Types.ObjectId,
     quantity: number,
-	price: number
+    price: number
   ): Promise<void>;
   correctPassword(
     candidatePassword: string,
     userPassword: string
   ): Promise<boolean>;
+  removeFromCart(
+    productId: Schema.Types.ObjectId,
+    quantity: number,
+    price: number
+  ): Promise<void>;
+  favourites: Array<Schema.Types.ObjectId>;
 }
 
 const userSchema = new Schema<User>(
@@ -100,16 +106,17 @@ const userSchema = new Schema<User>(
       items: [
         {
           product: { type: Schema.Types.ObjectId, ref: "Products" },
-          quantity: { type: Number },
-		  total: { type: Number },
+          quantity: { type: Number, default: 0 },
+          total: { type: Number, default: 0 },
         },
       ],
-      totalPrice: { type: Number },
-      totalQuantity: { type: Number },
+      totalPrice: { type: Number, default: 0 },
+      totalQuantity: { type: Number, default: 0 },
     },
     lastActivityDate: { type: Date },
     passwordChangedAt: { type: Date, select: false },
     active: { type: Boolean, default: false },
+	favourites: { type: [Schema.Types.ObjectId], ref: "Products" }
   },
   {
     timestamps: true,
@@ -195,8 +202,8 @@ userSchema.methods.addToCart = async function (
   );
 
   let updatedItems = [...user.cart.items];
-  let updatedTotalQuantity = user.cart.totalQuantity + quantity;
-  let updatedTotalPrice = user.cart.totalPrice;
+  let updatedTotalQuantity = (user.cart.totalQuantity || 0)  + quantity;
+  let updatedTotalPrice = user.cart.totalPrice || 0;
 
   // If product already exists in cart, update quantity and total price
   if (updatedProductIndex >= 0) {
@@ -204,7 +211,11 @@ userSchema.methods.addToCart = async function (
     updatedItems[updatedProductIndex].total += price * quantity;
   } else {
     // If product does not exist in cart, add it to the cart items
-    updatedItems.push({ product: productId, quantity, total: price * quantity });
+    updatedItems.push({
+      product: productId,
+      quantity,
+      total: price * quantity,
+    });
   }
 
   updatedTotalPrice += price * quantity;
@@ -217,38 +228,38 @@ userSchema.methods.addToCart = async function (
 };
 
 userSchema.methods.removeFromCart = async function (
-	productId: Schema.Types.ObjectId,
-	quantity: number,
-	price: number
-  ): Promise<void> {
-	const user = this as User;
-  
-	const updatedProductIndex = user.cart.items.findIndex(
-	  (item) => item.product.toString() === productId.toString()
-	);
-  
-	let updatedItems = [...user.cart.items];
-	let updatedTotalQuantity = user.cart.totalQuantity - quantity;
-	let updatedTotalPrice = user.cart.totalPrice;
-  
-	// If product already exists in cart, update quantity and total price
-	if (updatedProductIndex >= 0) {
-	  updatedItems[updatedProductIndex].quantity -= quantity;
-	  updatedItems[updatedProductIndex].total -= price * quantity;
+  productId: Schema.Types.ObjectId,
+  quantity: number,
+  price: number
+): Promise<void> {
+  const user = this as User;
 
-	  if(updatedItems[updatedProductIndex].quantity <= 0){
-		updatedItems.splice(updatedProductIndex, 1);
-	  }
-	}
-  
-	updatedTotalPrice -= price * quantity;
-  
-	user.cart.items = updatedItems;
-	user.cart.totalQuantity = updatedTotalQuantity;
-	user.cart.totalPrice = updatedTotalPrice;
+  const updatedProductIndex = user.cart.items.findIndex(
+    (item) => item.product.toString() === productId.toString()
+  );
 
-	await user.save();
-  };
+  let updatedItems = [...user.cart.items];
+  let updatedTotalQuantity = (user.cart.totalQuantity || 0) - quantity;
+  let updatedTotalPrice = user.cart.totalPrice || 0;
+
+  // If product already exists in cart, update quantity and total price
+  if (updatedProductIndex >= 0) {
+    updatedItems[updatedProductIndex].quantity -= quantity;
+    updatedItems[updatedProductIndex].total -= price * quantity;
+
+    if (updatedItems[updatedProductIndex].quantity <= 0) {
+      updatedItems.splice(updatedProductIndex, 1);
+    }
+  }
+
+  updatedTotalPrice -= price * quantity;
+
+  user.cart.items = updatedItems;
+  user.cart.totalQuantity = updatedTotalQuantity;
+  user.cart.totalPrice = updatedTotalPrice;
+
+  await user.save();
+};
 
 export default mongoose.model<User>("Users", userSchema);
 export { User };

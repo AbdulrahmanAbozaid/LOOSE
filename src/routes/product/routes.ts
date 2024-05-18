@@ -16,13 +16,16 @@ router.route('/')
 
 router.route('/:id')
 .all(authorize)
-  .patch(upload.array("photos", 10), productController.updateProduct)
+  .patch(upload.array("photos", 10), productController.updateProducts)
   .get(productController.getProductById)
   .delete(restrictTo("Admin"), productController.deleteProduct)
   .put(productController.draftProduct);
 
 router.route('/:id/add-to-cart')
   .put(authorize, productController.addToCart);
+
+router.route('/:id/remove-from-cart')
+  .put(authorize, productController.removeFromCart);
 
 // Export router
 export default router;

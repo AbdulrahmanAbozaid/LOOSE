@@ -28,7 +28,7 @@ const ProductSchema: Schema = new Schema<IProduct>({
 	] },
     price: { type: Number, required: true },
     colors: { type: [String], required: false, default: ["red", "blue", "green", "yellow"] },
-    sizes: { type: [String], required: false, default: ["XL", "XXL", "S", "L"] },
+    sizes: { type: [String], required: false, default: ["S", "L", "XL", "XXL"] },
     publishDate: { type: Date, required: false, default: new Date()},
     discount: { type: Number, default: 0 },
     numOfSales: { type: Number, default: 0 },

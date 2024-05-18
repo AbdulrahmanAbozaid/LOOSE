@@ -1,49 +1,5 @@
 import Users from "./model"
 
-/*
-export interface AuthService {
-  signup(userData: {
-    fullName: string;
-    phone: string;
-    email: string;
-    password: string;
-  }): Promise<{
-    success: boolean;
-    token?: string;
-    user?: User;
-    message?: string;
-  }>;
-
-  login(credentials: {
-    email: string;
-    password: string;
-  }): Promise<{
-    success: boolean;
-    token?: string;
-    user?: User;
-    message?: string;
-  }>;
-
-  forgotPassword(
-    email: string
-  ): Promise<{ success: boolean; message?: string }>;
-
-  verifyForgotPasswordOTP(
-    OTP: string
-  ): Promise<{ success: boolean; token?: string }>;
-
-  resetPassword(
-    token: string,
-    newPassword: string
-  ): Promise<{
-    success: boolean;
-    token?: string;
-    user?: User;
-    message?: string;
-  }>;
-}
-*/
-
 /**
  * UserRepository
  * @description: a class to separate database access from business logic,
