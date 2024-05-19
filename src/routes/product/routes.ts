@@ -1,12 +1,16 @@
 // Import necessary modules and classes
 import express from 'express';
-import productController from '../../controller/product.controller';
-import { authorize, restrictTo } from '../../utils/auth.service';
+import productController, {searchProducts} from '../../controller/product.controller';
+import { authorize } from '../../utils/auth.service';
 import FileUploader from "../../middlewares/file_uploader"
 
 // Create a router instance
 const router = express.Router();
 const upload = FileUploader();
+
+
+// Search
+router.get('/search', authorize, searchProducts);
 
 // Define routes
 router.route('/')

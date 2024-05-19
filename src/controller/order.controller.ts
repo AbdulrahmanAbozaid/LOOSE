@@ -55,10 +55,13 @@ export const deleteOrder = asyncHandler(
 // Method to get all products
 export const saleStatistics: RequestHandler = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-	let {page=1, limit=7} = req.query;
-	page = parseInt(page as string);
-	limit = parseInt(limit as string);
-    const products = await Product.find().limit(limit).skip((page-1)*limit).sort({ numOfSales: -1 });
+    let { page = 1, limit = 7 } = req.query;
+    page = parseInt(page as string);
+    limit = parseInt(limit as string);
+    const products = await Product.find()
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .sort({ numOfSales: -1 });
     res.status(200).json({ success: true, data: { products } });
   }
 );
@@ -66,11 +69,13 @@ export const saleStatistics: RequestHandler = asyncHandler(
 // Method to get all products
 export const viewStatistics: RequestHandler = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-	let {page=1, limit=7} = req.query;
-	page = parseInt(page as string);
-	limit = parseInt(limit as string);
-    const products = await Product.find().limit(limit).skip((page-1)*limit).sort({ views: -1 });
+    let { page = 1, limit = 7 } = req.query;
+    page = parseInt(page as string);
+    limit = parseInt(limit as string);
+    const products = await Product.find()
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .sort({ views: -1 });
     res.status(200).json({ success: true, data: { products } });
   }
 );
-

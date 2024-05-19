@@ -314,4 +314,25 @@ class ProductController {
     }
   );
 }
+
+export const searchProducts = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { name } = req.query;
+    if (!name) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Name query parameter is required" });
+    }
+
+    const products = await Product.find({
+		name: { $regex: `.*${name}.*`, $options: "i" },
+	});
+
+    res.status(200).json({
+      success: true,
+      data: products,
+    });
+  }
+);
+
 export default new ProductController();
