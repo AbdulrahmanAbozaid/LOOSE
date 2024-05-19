@@ -5,10 +5,16 @@ import crypto from "crypto";
 type HookNextFunction = () => void;
 const SALT = 10;
 
+// product Entry
+interface ItemDetail {
+  color: string;
+  size: string;
+}
 interface CartItem {
   product: Schema.Types.ObjectId;
   quantity: number;
   total: number;
+  details?: ItemDetail[];
   colors: string[];
   sizes: string[];
 }
@@ -45,22 +51,12 @@ interface User extends Document {
   lastActivityDate: Date;
   passwordChangedAt?: Date;
   active: boolean;
-  favourites: Array<Schema.Types.ObjectId>;
+  favorites: Array<Schema.Types.ObjectId>;
   // methods
-  addToCart(
-    productId: Schema.Types.ObjectId,
-    quantity: number,
-    price: number
-  ): Promise<void>;
   correctPassword(
     candidatePassword: string,
     userPassword: string
   ): Promise<boolean>;
-  removeFromCart(
-    productId: Schema.Types.ObjectId,
-    quantity: number,
-    price: number
-  ): Promise<void>;
   checkoutCart(): Promise<void>;
   addToFavs(productId: Schema.Types.ObjectId): Promise<void>;
   removeFromFavs(productId: Schema.Types.ObjectId): Promise<void>;
@@ -119,8 +115,18 @@ const userSchema = new Schema<User>(
           product: { type: Schema.Types.ObjectId, ref: "Products" },
           quantity: { type: Number, default: 0 },
           total: { type: Number, default: 0 },
-          colors: [{ type: String }],
-          sizess: [{ type: String }],
+          details: {
+            type: [
+              {
+                color: { type: String },
+                size: { type: String },
+                quantity: { type: Number, default: 0 },
+              },
+            ],
+            default: [],
+          },
+          colors: { type: [{type: String, lowercase: true}], default: [] },
+          sizes: { type: [{type: String, uppercase: true}], default: [] },
         },
       ],
       totalPrice: { type: Number, default: 0 },
@@ -129,7 +135,10 @@ const userSchema = new Schema<User>(
     lastActivityDate: { type: Date },
     passwordChangedAt: { type: Date, select: false },
     active: { type: Boolean, default: false },
-    favourites: [{ type: mongoose.Types.ObjectId, ref: "Products" }],
+    favorites: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Products" }],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -203,93 +212,11 @@ userSchema.methods.createPasswordResetToken = function () {
   return resetToken;
 };
 
-userSchema.methods.addToCart = async function (
-  productId: Schema.Types.ObjectId,
-  quantity: number,
-  price: number,
-  colors: string[],
-  sizes: string[]
-): Promise<void> {
-  const user = this as User;
-
-  const updatedProductIndex = user.cart.items.findIndex(
-    (item) => item.product.toString() === productId.toString()
-  );
-
-  let updatedItems = [...user.cart.items];
-  let updatedTotalQuantity = (user.cart.totalQuantity || 0) + quantity;
-  let updatedTotalPrice = user.cart.totalPrice || 0;
-
-  // If product already exists in cart, update quantity and total price
-  if (updatedProductIndex >= 0) {
-    updatedItems[updatedProductIndex].quantity += quantity;
-    updatedItems[updatedProductIndex].total += price * quantity;
-  } else {
-    // If product does not exist in cart, add it to the cart items
-    updatedItems.push({
-      product: productId,
-      quantity,
-      total: price * quantity,
-      colors,
-      sizes,
-    });
-  }
-
-  updatedTotalPrice += price * quantity;
-
-  user.cart.items = updatedItems;
-  user.cart.totalQuantity = updatedTotalQuantity;
-  user.cart.totalPrice = updatedTotalPrice;
-
-  await user.save();
-};
-
-userSchema.methods.removeFromCart = async function (
-  productId: Schema.Types.ObjectId,
-  quantity: number,
-  price: number
-): Promise<void> {
-  const user = this as User;
-
-  const updatedProductIndex = user.cart.items.findIndex(
-    (item) => item.product.toString() === productId.toString()
-  );
-
-  let updatedItems = [...user.cart.items];
-  //   let updatedTotalQuantity = user.cart.totalQuantity || 0;
-  let updatedTotalPrice = user.cart.totalPrice || 0;
-
-  // If product already exists in cart, update quantity and total price
-  if (updatedProductIndex >= 0) {
-    if (updatedItems[updatedProductIndex].quantity <= quantity) {
-      user.cart.totalQuantity -= updatedItems[updatedProductIndex].quantity;
-      user.cart.totalPrice -=
-        updatedItems[updatedProductIndex].quantity * price;
-      updatedItems.splice(updatedProductIndex, 1);
-      user.cart.items = updatedItems;
-      await user.save();
-      return;
-    } else {
-      updatedItems[updatedProductIndex].quantity -= quantity;
-      updatedItems[updatedProductIndex].total -= price * quantity;
-    }
-  } else {
-    return;
-  }
-
-  updatedTotalPrice -= price * quantity;
-  user.cart.totalQuantity -= quantity;
-  user.cart.items = updatedItems;
-  user.cart.totalPrice = updatedTotalPrice;
-
-  await user.save();
-};
-
 userSchema.methods.addToFavs = async function (
   productId: Schema.Types.ObjectId
 ): Promise<void> {
-  if (!this.favourites.includes(productId)) {
-    this.favourites.push(productId);
+  if (!this.favorites.includes(productId)) {
+    this.favorites.push(productId);
     await this.save();
   }
 };
@@ -297,7 +224,7 @@ userSchema.methods.addToFavs = async function (
 userSchema.methods.removeFromFavs = async function (
   productId: Schema.Types.ObjectId
 ): Promise<void> {
-  this.favourites = this.favourites.filter(
+  this.favorites = this.favorites.filter(
     (fav: Schema.Types.ObjectId) => fav.toString() !== productId.toString()
   );
   await this.save();

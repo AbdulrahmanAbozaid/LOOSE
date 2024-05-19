@@ -44,16 +44,16 @@ router.put('/:id/cart', authorize, userController.updateUserCart);
 // POST /api/v1/users/:id/cart - Add a whole cart for a user
 router.post('/:id/cart', authorize, userController.addUserCart);
 
-// POST /api/v1/users/checkout-cart
-router.post('/:id/checkout-cart', authorize, userController.checkoutCart);
+// PATCH /api/v1/users/cart
+router.patch('/:id/cart', authorize, userController.checkoutCart);
 
 // POST /api/v1/users/favorites/add
 router.post('/favorites/add', authorize, userController.addToFavs);
 
-// POST /api/v1/users/favorites/remove
+// DELETE /api/v1/users/favorites/remove
 router.delete('/favorites/remove', authorize, userController.removeFromFavs);
 
 // GET /api/v1/users/favorites
-router.get('/favorites', authorize, userController.getUserFavourites);
+router.get('/:id/favorites', authorize, userController.getUserFavorites);
 
 export default router;

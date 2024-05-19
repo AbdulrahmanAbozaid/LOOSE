@@ -162,7 +162,7 @@ class ProductController {
   public addToCart = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
       const productId = req.params.id;
-      const { quantity } = req.body;
+      const { quantity = 1, sizes, colors } = req.body;
 
       // Check if product exists
       const product = await Product.findById(productId);
@@ -182,7 +182,34 @@ class ProductController {
       }
 
       // Add product to user's cart
-      await user.addToCart(product.id, quantity, product.price);
+      let cart = user.cart;
+      let { id: prodID, price } = product;
+
+      let cartProduct = cart.items.find(
+        (item) => item.product.toString() === prodID.toString()
+      );
+
+      if (cartProduct) {
+        cartProduct.quantity += quantity;
+        cartProduct.total += price * quantity;
+        // cartProduct.colors = [...new Set([...colors, ...cartProduct.colors])];
+        cartProduct.colors = [...colors, ...cartProduct.colors];
+        // cartProduct.sizes = [...new Set([...sizes, ...cartProduct.sizes])];
+        cartProduct.sizes = [...sizes, ...cartProduct.sizes];
+      } else {
+        cart.items.push({
+          product: prodID,
+          quantity,
+          total: price * quantity,
+          colors,
+          sizes,
+        });
+      }
+
+      user.cart.totalQuantity += quantity;
+      user.cart.totalPrice += price * quantity;
+
+      await user.save();
 
       res
         .status(200)
@@ -194,7 +221,7 @@ class ProductController {
   public removeFromCart = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
       const productId = req.params.id;
-      const { quantity } = req.body;
+      const { quantity = 1, colors = [], sizes = [] } = req.body;
 
       // Check if product exists
       const product = await Product.findById(productId);
@@ -214,7 +241,55 @@ class ProductController {
       }
 
       // remove product to user's cart
-      await user.removeFromCart(product.id, quantity, product.price);
+      let cart = user.cart;
+      let { id: prodID, price } = product;
+
+      let cartProduct = cart.items.find(
+        (item) => item.product.toString() === prodID.toString()
+      );
+
+      if (cartProduct) {
+        if (quantity > cartProduct.quantity) {
+          return next(new AppError("Invalid quantity", 400));
+        }
+        if (quantity === cartProduct.quantity) {
+          cart.items = cart.items.filter(
+            (item) => item.product.toString() !== prodID.toString()
+          );
+        } else {
+          cartProduct.quantity -= quantity;
+          cartProduct.total -= price * quantity;
+
+          if (colors?.length > 0) {
+            for (let color of colors) {
+              let ind = cartProduct.colors.findIndex(
+                (c) => color.toLowerCase() == c.toLowerCase()
+              );
+              if (ind >= 0) {
+                cartProduct.colors.splice(ind, 1);
+              }
+            }
+          }
+
+          if (sizes?.length > 0) {
+            for (let size of sizes) {
+              let ind = cartProduct.sizes.findIndex(
+                (sz) => size.toUpperCase() == sz.toUpperCase()
+              );
+              if (ind >= 0) {
+                cartProduct.sizes.splice(ind, 1);
+              }
+            }
+          }
+        }
+      } else {
+        return new AppError("Product not found in cart", 404);
+      }
+
+      user.cart.totalQuantity -= quantity;
+      user.cart.totalPrice -= price * quantity;
+
+      await user.save();
 
       res.status(200).json({
         success: true,
@@ -222,43 +297,5 @@ class ProductController {
       });
     }
   );
-
-  //   public checkoutCart: RequestHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  //     const userId = (req as any).user.id;
-  //     const user = await User.findById(userId).populate('cart.items.product');
-
-  //     if (!user) {
-  //       return next(new AppError('User not found', 404));
-  //     }
-
-  //     if (user.cart.items.length === 0) {
-  //       return next(new AppError('Cart is empty', 400));
-  //     }
-
-  //     let message = `Order Details:\n`;
-
-  //     for (const item of user.cart.items) {
-  //       const product = item.product as any; // Cast to any to access product fields
-  //       message += `Product: ${product.name}, Quantity: ${item.quantity}`;
-
-  //       // Update the number of sales
-  //       product.numOfSales += item.quantity;
-  //       await product.save();
-  //     }
-
-  //     message += `Total Price: ${user.cart.totalPrice}, Total Quantity: ${user.cart.totalQuantity}`;
-
-  //     // Send the message to admin's WhatsApp
-  //     // await sendToWhatsapp(process.env.ADMIN_WHATSAPP_NUMBER!, message);
-
-  //     // Reset the cart
-  //     user.cart.items = [];
-  //     user.cart.totalPrice = 0;
-  //     user.cart.totalQuantity = 0;
-  //     await user.save();
-
-  //     res.status(200).json({ success: true, message: 'Checkout successful and cart cleared', phone: process.env.ADMIN_WHATSAPP_NUMBER });
-  //   });
 }
-
 export default new ProductController();
