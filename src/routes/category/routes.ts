@@ -1,20 +1,23 @@
 import express from 'express';
 import categoryController from '../../controller/category.controller';
 import { authorize, restrictTo } from '../../utils/auth.service';
+import FileUploader from '../../middlewares/file_uploader';
+
 
 const router = express.Router();
+const upload = FileUploader();
 
 router.route('/')
 	.all(authorize)
-  .post(categoryController.createCategory)
+  .post(upload.single("thumbnail"), categoryController.createCategory)
   .get(categoryController.getAllCategories);
 
 router.route('/:id')
 	.all(authorize)
   .get(categoryController.getCategory)
-  .patch(categoryController.updateCategory)
-  .delete(restrictTo("Admin"), categoryController.deleteCategory);
+  .patch(upload.single("thumbnail"), categoryController.updateCategory)
+  .delete(restrictTo("Admin", "Customer"), categoryController.deleteCategory);
 
-router.put('/:id', restrictTo("Admin"), categoryController.draftCategory);
+router.put('/:id', [authorize, restrictTo("Admin", "Customer")], categoryController.draftCategory);
 
 export default router;

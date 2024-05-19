@@ -6,6 +6,7 @@ import User from "../model/user/model";
 import fs from "fs";
 import cloudinary from "./../middlewares/cloudinary_uploader";
 
+
 const CLOUD_OPTS = {
   use_filename: true,
   unique_filename: false,
@@ -52,7 +53,7 @@ class ProductController {
       if (!product) {
         return next(new AppError("Product not found", 404));
       }
-      if ((req as any)?.user?.role !== "admin") {
+      if ((req as any)?.user?.role.toLowerCase() !== "admin") {
         await product.increaseViews();
       }
       res.status(200).json({ success: true, data: { product } });
@@ -109,9 +110,11 @@ class ProductController {
       }
 
       //update the product
-      await product.updateOne(req.body);
-      const fproduct: any = await product.save();
-      res.status(200).json({ success: true, data: { fproduct } });
+	  const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
+		new: true,
+	  });
+
+      res.status(200).json({ success: true, data: { product: updatedProduct } });
     }
   );
 
