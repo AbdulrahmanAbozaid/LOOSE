@@ -10,15 +10,15 @@ const upload = FileUploader();
 
 // Define routes
 router.route('/')
-	.all(authorize)
+	.all()
   .post(upload.array("photos", 10), productController.createProduct)
   .get(productController.getAllProducts);
 
 router.route('/:id')
-.all(authorize)
+.all()
   .patch(upload.array("photos", 10), productController.updateProducts)
   .get(productController.getProductById)
-  .delete(restrictTo("Admin"), productController.deleteProduct)
+  .delete(productController.deleteProduct)
   .put(productController.draftProduct);
 
 router.route('/:id/add-to-cart')

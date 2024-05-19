@@ -18,7 +18,7 @@ interface IProduct extends Document {
 }
 
 // Define schema for Product
-const ProductSchema: Schema = new Schema<IProduct>(
+const ProductSchema = new Schema<IProduct>(
   {
     name: { type: String, required: true },
     description: { type: String, required: true },
@@ -48,7 +48,7 @@ const ProductSchema: Schema = new Schema<IProduct>(
       required: false,
     //   default: ["S", "L", "XL", "XXL"],
     },
-    publishDate: { type: Date, required: false, default: new Date() },
+    publishDate: { type: Date, required: false, default: Date.now },
     discount: { type: Number, default: 0 },
     numOfSales: { type: Number, default: 0 },
 	views: {

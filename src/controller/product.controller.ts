@@ -6,7 +6,6 @@ import User from "../model/user/model";
 import fs from "fs";
 import cloudinary from "./../middlewares/cloudinary_uploader";
 
-
 const CLOUD_OPTS = {
   use_filename: true,
   unique_filename: false,
@@ -35,6 +34,14 @@ class ProductController {
 
       const product = await Product.create(req.body);
       res.status(201).json({ success: true, data: { product } });
+    }
+  );
+
+  // Method to get all products
+  public saleStatistics: RequestHandler = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const products = await Product.find().sort({ numOfSales: -1 }).limit(10);
+      res.status(200).json({ success: true, data: { products } });
     }
   );
 
@@ -110,11 +117,17 @@ class ProductController {
       }
 
       //update the product
-	  const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
-		new: true,
-	  });
+      const updatedProduct = await Product.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        {
+          new: true,
+        }
+      );
 
-      res.status(200).json({ success: true, data: { product: updatedProduct } });
+      res
+        .status(200)
+        .json({ success: true, data: { product: updatedProduct } });
     }
   );
 

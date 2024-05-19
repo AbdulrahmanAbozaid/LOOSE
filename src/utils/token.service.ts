@@ -1,15 +1,12 @@
 import jwt from "jsonwebtoken";
 import AppError from "./app_error";
 
-export const generateToken = async (payload: object, duration: number) => {
+export const generateToken = async (payload: object, duration: number | string = process.env.TOKEN_DEV as string) => {
   if (!payload) {
     throw new Error("Token is required");
   }
   const token = jwt.sign(payload, process.env.TOKEN_SECRET as string, {
-    expiresIn:
-      process.env.NODE_ENV == "production"
-        ? process.env.TOKEN_EXPIRY || duration
-        : process.env.TOKEN_DEV,
+    expiresIn: duration || process.env.TOKEN_DEV,
   });
 
   return token;

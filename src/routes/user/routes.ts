@@ -1,7 +1,7 @@
 import { Router } from "express";
 import AuthController from "../../controller/authController/user_auth_controller";
 import * as userController from "../../controller/user.controller";
-import { authorize, restrictTo } from "../../utils/auth.service";
+import { authorize } from "../../utils/auth.service";
 
 const router = Router();
 
@@ -60,16 +60,16 @@ router.post("/auth/reset-password/:token", AuthController.resetPassword);
 router.post("/:id/password/", AuthController.changePassword);
 
 // GET /api/v1/users - Get all users
-router.get('/', authorize, restrictTo("Admin"), userController.getUsers);
+router.get('/', userController.getUsers);
 
 // GET /api/v1/users/:id - Get a user by ID
-router.get('/:id', authorize, userController.getUserById);
+router.get('/:id', userController.getUserById);
 
 // PUT /api/v1/users/:id - Update a user
-router.put('/:id', authorize, userController.updateUser);
+router.put('/:id', userController.updateUser);
 
 // DELETE /api/v1/users/:id - Delete a user
-router.delete('/:id', authorize, restrictTo("Admin"), userController.deleteUser);
+router.delete('/:id', userController.deleteUser);
 
 // GET /api/v1/users/:id/cart - Get the cart for a user
 router.get('/:id/cart', authorize, userController.getUserCart);

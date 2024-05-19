@@ -162,12 +162,13 @@ class AuthController  {
     // Generate new OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.verifyEmailOTPToken = otp;
-    user.verifyEmailExpiresAt = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+    user.verifyEmailExpires = new Date(Date.now() + 10 * 60 * 1000); // OTP expires in 10 minutes
     await user.save();
 
     // Send OTP email
     const message = `Your verification OTP: ${otp}`;
     // Add logic to send email
+    await sendEmail(user.email, "Verify Email token (valid for 10 min)", message);
 
     res.status(200).json({ success: true, message: 'Verification OTP resent successfully' });
   });
