@@ -53,6 +53,16 @@ class ProductController {
     }
   );
 
+  // Method to get all products related to category
+  public getCategoryProducts: RequestHandler = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const products = await Product.find({
+		category: req.params.id
+	  });
+      res.status(200).json({ success: true, data: { products } });
+    }
+  );
+
   // Method to get a product by ID
   public getProductById: RequestHandler = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {

@@ -2,10 +2,13 @@ import express from 'express';
 import categoryController from '../../controller/category.controller';
 // import { authorize, restrictTo } from '../../utils/auth.service';
 import FileUploader from '../../middlewares/file_uploader';
+import { authorize } from '../../utils/auth.service';
 
 
 const router = express.Router();
 const upload = FileUploader();
+
+router.get('/:id/products', authorize, categoryController.getCategoryProducts)
 
 router.route('/')
 	.all()

@@ -4,6 +4,8 @@ import asyncHandler from "../middlewares/async_handler";
 import AppError from "../utils/app_error";
 import cloudinary from "../middlewares/cloudinary_uploader";
 import fs from "fs";
+import Product from "../model/product/model";
+
 
 type opt = {
   use_filename?: boolean;
@@ -158,6 +160,16 @@ class CategoryController {
       res
         .status(200)
         .json({ success: true, message: "Category drafted successfully" });
+    }
+  );
+
+  // Method to get all products related to category
+  public getCategoryProducts: RequestHandler = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const products = await Product.find({
+		category: req.params.id
+	  });
+      res.status(200).json({ success: true, data: { products } });
     }
   );
 }
