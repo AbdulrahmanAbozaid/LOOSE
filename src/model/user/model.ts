@@ -63,6 +63,101 @@ interface User extends Document {
   increaseSeen(): Promise<void>;
 }
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - fullName
+ *         - email
+ *         - password
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: The auto-generated id of the user
+ *         fullName:
+ *           type: string
+ *           description: The name of the user
+ *         email:
+ *           type: string
+ *           description: The email of the user
+ *         password:
+ *           type: string
+ *           description: The password of the user
+ *         phone:
+ *           type: string
+ *           description: The phone number of the user
+ *         address:
+ *           type: object
+ *           properties:
+ *             street:
+ *               type: string
+ *             city:
+ *               type: string
+ *             state:
+ *               type: string
+ *             country:
+ *               type: string
+ *             zipCode:
+ *               type: string
+ *         favorites:
+ *           type: array
+ *           items:
+ *             type: string
+ *             description: The favorite products of the user
+ *         cart:
+ *           type: object
+ *           properties:
+ *             items:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   product:
+ *                     type: string
+ *                   quantity:
+ *                     type: number
+ *                   colors:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   sizes:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *             totalPrice:
+ *               type: number
+ *             totalQuantity:
+ *               type: number
+ *     CreateUser:
+ *       type: object
+ *       required:
+ *         - fullName
+ *         - email
+ *         - password
+ *       properties:
+ *         fullName:
+ *           type: string
+ *           description: The name of the user
+ *         email:
+ *           type: string
+ *           description: The email of the user
+ *         password:
+ *           type: string
+ *           description: The password of the user
+ *         phone:
+ *           type: string
+ *           description: The phone number of the user
+ *     UserResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         data:
+ *           $ref: '#/components/schemas/User'
+ */
 const userSchema = new Schema<User>(
   {
     fullName: {

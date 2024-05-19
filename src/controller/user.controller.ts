@@ -3,6 +3,8 @@ import asyncHandler from "../middlewares/async_handler";
 import User, { User as Users } from "../model/user/model";
 import AppError from "../utils/app_error";
 import { hash } from "bcrypt";
+import Order from './../model/order/model';
+
 
 // @desc    Get all users
 // @route   GET /api/v1/users
@@ -155,76 +157,86 @@ const addUserCart: RequestHandler = asyncHandler(
 // @route   PATCH /api/v1/users/:id/cart
 // @access  Private (user only)
 const checkoutCart: RequestHandler = asyncHandler(
-	async (req: Request, res: Response, next: NextFunction) => {
-	  const userId = req.params.id || (req as any).user.id;
-	  const user = await User.findById(userId).populate("cart.items.product");
-  
-	  if (!user) {
-		return next(new AppError("User not found", 404));
-	  }
-  
-	  if (user.cart.items.length === 0) {
-		return next(new AppError("Cart is empty", 400));
-	  }
-  
-	  let message = `Order Details:\n`;
-  
-	  // Customer details
-	  message += `Customer Name: ${user.fullName}\n`;
-	  message += `Phone: ${user.phone}\n`;
-	  message += `Email: ${user.email}\n`;
-	  if (Object.values(user.address).some(address => Boolean(address))) {
-		const { street, city, country, state, zipCode } = user.address;
-		message += `Address:\n`;
-		if (street) message += `\tStreet: ${street || "N/A"}\n`;
-		if (city) message += `\tCity: ${city || "N/A"}\n`;
-		if (state) message += `\tState: ${state || "N/A"}\n`;
-		if (country) message += `\tCountry: ${country || "N/A"}\n`;
-		if (zipCode) message += `\tZip Code: ${zipCode || "N/A"}\n`;
-	  }
-	  message += `\nProducts:\n`;
-  
-	  for (const item of user.cart.items) {
-		const product = item.product as any; // Cast to any to access product fields
-		message += `Name: ${product.name}\nQuantity: ${item.quantity}\n`;
-		if (
-		  item?.colors?.length &&
-		  item?.sizes?.length &&
-		  item?.colors?.length === item?.sizes?.length
-		) {
-		  for (let i = 0; i < item.colors.length; i++) {
-			message += `\tColor: ${item.colors[i]}, Size: ${item.sizes[i]}\n`;
-		  }
-		} else {
-		  message += `\tColor(s): ${item.colors.join(", ")}, Size(s): ${item.sizes.join(", ")}\n`;
-		}
-  
-		// Update the number of sales
-		product.numOfSales += item.quantity;
-		await product.save();
-	  }
-  
-	  message += `\nTotal Price: ${user.cart.totalPrice}\n`;
-	  message += `Total Quantity: ${user.cart.totalQuantity}`;
-  
-	  // Reset the cart
-	  user.cart.items = [];
-	  user.cart.totalPrice = 0;
-	  user.cart.totalQuantity = 0;
-	  await user.save();
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id || (req as any).user.id;
+    const user = await User.findById(userId).populate("cart.items.product");
 
-	  console.log(message);
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
 
-	  res.status(200).json({
-		success: true,
-		message: "Order placed successfully",
-		data: {
-		  wa_message: message,
-		  phone: process.env.ADMIN_WHATSAPP_NUMBER,
-		}
-	  });
-	}
-  );
+    if (user.cart.items.length === 0) {
+      return next(new AppError("Cart is empty", 400));
+    }
+
+    let message = `Order Details:\n`;
+
+    // Customer details
+    message += `Customer Name: ${user.fullName}\n`;
+    message += `Phone: ${user.phone}\n`;
+    message += `Email: ${user.email}\n`;
+    if (Object.values(user.address).some((address) => Boolean(address))) {
+      const { street, city, country, state, zipCode } = user.address;
+      message += `Address:\n`;
+      if (street) message += `\tStreet: ${street || "N/A"}\n`;
+      if (city) message += `\tCity: ${city || "N/A"}\n`;
+      if (state) message += `\tState: ${state || "N/A"}\n`;
+      if (country) message += `\tCountry: ${country || "N/A"}\n`;
+      if (zipCode) message += `\tZip Code: ${zipCode || "N/A"}\n`;
+    }
+    message += `\nProducts:\n`;
+
+    for (const item of user.cart.items) {
+      const product = item.product as any; // Cast to any to access product fields
+      message += `Name: ${product.name}\nQuantity: ${item.quantity}\n`;
+      if (
+        item?.colors?.length &&
+        item?.sizes?.length &&
+        item?.colors?.length === item?.sizes?.length
+      ) {
+        for (let i = 0; i < item.colors.length; i++) {
+          message += `\tColor: ${item.colors[i]}, Size: ${item.sizes[i]}\n`;
+        }
+      } else {
+        message += `\tColor(s): ${item.colors.join(
+          ", "
+        )}, Size(s): ${item.sizes.join(", ")}\n`;
+      }
+
+      // Update the number of sales
+      product.numOfSales += item.quantity;
+      await product.save();
+    }
+
+    message += `\nTotal Price: ${user.cart.totalPrice}\n`;
+    message += `Total Quantity: ${user.cart.totalQuantity}`;
+
+    // Create the order
+    await Order.create({
+      customer: user._id,
+      totalPrice: user.cart.totalPrice,
+      totalQuantity: user.cart.totalQuantity,
+      statement: message,
+    });
+
+    // Reset the cart
+    user.cart.items = [];
+    user.cart.totalPrice = 0;
+    user.cart.totalQuantity = 0;
+    await user.save();
+
+    console.log(message);
+
+    res.status(200).json({
+      success: true,
+      message: "Order placed successfully",
+      data: {
+        wa_message: message,
+        phone: process.env.ADMIN_WHATSAPP_NUMBER,
+      },
+    });
+  }
+);
 
 // Method to add a product to favorites
 const addToFavs: RequestHandler = asyncHandler(
