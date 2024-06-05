@@ -12,6 +12,7 @@ An e-commerce platform for women's clothing.
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
   - [Usage](#usage)
+  - [API](#api)
   - [Contributing](#contributing)
   - [License](#license)
   - [Acknowledgements](#acknowledgements)
@@ -90,6 +91,10 @@ For development with live reloading, you can use:
 ```sh
 npm run dev
 ```
+
+## API
+
+[POSTMAN API](https://documenter.getpostman.com/view/24172025/2sA3QzaToA)
 
 ## Contributing
 
